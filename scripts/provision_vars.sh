@@ -2,6 +2,9 @@
 
 # Fail if one command fails
 set -e
+%{ if openai_key == "" }
+echo "openai_key is required" >&2; exit 1
+%{ endif }
 
 # Run the script in non-interactive mode so that the installation does not 
 # prompt for input
@@ -40,7 +43,7 @@ PASSWD=$(htpasswd -bnBC 10 "" "${open_webui_passwd}" | tr -d ':\n')
 USER="${open_webui_user}"
 
 # Start Open WebUI for the first time so that it creates the database
-/usr/bin/docker pull ghcr.io/open-webui/open-webui:ollama
+/usr/bin/docker pull ghcr.io/open-webui/open-webui:v0.9.5-ollama
 /usr/bin/docker run -d --rm -p 80:8080 -v /etc/open-webui.d:/root/.open_web_ui -v /etc/open-webui.d:/app/backend/data --name openwebui ghcr.io/open-webui/open-webui:v0.9.5-ollama
 
 # Wait for the server to start
@@ -62,14 +65,12 @@ EOF
 sqlite3 /etc/open-webui.d/webui.db < /etc/open-webui.d/webui.sql
 
 # Cleanup
-# rm -f /etc/open-webui.d/webui.sql
+rm -f /etc/open-webui.d/webui.sql
 
 # Setup the Open WebUI systemd service
-echo "Printing OpenAI API key: ${openai_key}"
-%{ if openai_key != "" }
+install -m 600 /dev/null /etc/open-webui.d/open-webui.env
 echo "OPENAI_KEY='-e OPENAI_API_KEY=${openai_key}'" >> /etc/open-webui.d/open-webui.env
 echo "OPENAI_BASE='-e OPENAI_API_BASE_URLS=${openai_base}'" >> /etc/open-webui.d/open-webui.env
-%{ endif }
 
 ## Create the systemd unit
 ## When starting systemd will load the environment file and pass the variables to the container
@@ -86,7 +87,7 @@ Restart=always
 EnvironmentFile=/etc/open-webui.d/open-webui.env
 ExecStartPre=-/usr/bin/docker stop %n
 ExecStartPre=-/usr/bin/docker rm %n
-ExecStart=/usr/bin/docker run -p 80:8080 $OPENAI_BASE $OPENAI_KEY -e RAG_EMBEDDING_MODEL_AUTO_UPDATE=true -v /etc/open-webui.d:/root/.open_web_ui -v /etc/open-webui.d:/app/backend/data --name %n ghcr.io/open-webui/open-webui:ollama
+ExecStart=/usr/bin/docker run -p 80:8080 $OPENAI_BASE $OPENAI_KEY -e RAG_EMBEDDING_MODEL_AUTO_UPDATE=true -v /etc/open-webui.d:/root/.open_web_ui -v /etc/open-webui.d:/app/backend/data --name %n ghcr.io/open-webui/open-webui:v0.9.5-ollama
 
 [Install]
 WantedBy=multi-user.target
