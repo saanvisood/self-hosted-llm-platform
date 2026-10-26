@@ -30,7 +30,7 @@ variable "admin_cidr" {
   type        = string
   validation {
     # Checking that value is well-formed AND not 0.0.0.0/0
-    condition     = can(cidrhost(var.admin_cidr, 0) && var.admin_cidr != "0.0.0.0/0")
+    condition     = can(cidrhost(var.admin_cidr, 0)) && var.admin_cidr != "0.0.0.0/0"
     error_message = "Use a specific CIDR"
   }
 }
