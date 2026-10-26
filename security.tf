@@ -78,7 +78,8 @@ resource "aws_security_group" "private_ssh" {
     security_groups = [aws_security_group.ssh.id]
   }
 
-  # Same gate as private_http: both groups must close for the instance to lose internet access
+  # Same gate as private_http
+  # Both groups must close for the instance to lose internet access
   egress = var.lockdown_egress ? [] : [{
     from_port        = local.port_0
     to_port          = local.port_0
