@@ -62,14 +62,17 @@ resource "aws_route_table_association" "public_b" {
   route_table_id = aws_route_table.public.id
 }
 
-# Private route table (outbound through NAT)
+# Private route table
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.open_web_ui.id
+}
 
-  route {
-    cidr_block     = local.all_traffic_cidr
-    nat_gateway_id = aws_nat_gateway.main.id
-  }
+# Outbound through NAT present only until lockdown
+resource "aws_route" "private_nat" {
+  count                  = var.lockdown_egress ? 0 : 1
+  route_table_id         = aws_route_table.private.id
+  destination_cidr_block = local.all_traffic_cidr
+  nat_gateway_id         = aws_nat_gateway.main.id
 }
 
 # Associate private route table with private subnet

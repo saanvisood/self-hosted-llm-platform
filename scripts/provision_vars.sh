@@ -1,11 +1,5 @@
 #!/bin/bash
 
-# Fail if one command fails
-set -e
-%{ if openai_key == "" }
-echo "openai_key is required" >&2; exit 1
-%{ endif }
-
 # Run the script in non-interactive mode so that the installation does not 
 # prompt for input
 export DEBIAN_FRONTEND=noninteractive
@@ -69,8 +63,11 @@ rm -f /etc/open-webui.d/webui.sql
 
 # Setup the Open WebUI systemd service
 install -m 600 /dev/null /etc/open-webui.d/open-webui.env
+
+%{ if openai_base != "" }
 echo "OPENAI_KEY='-e OPENAI_API_KEY=${openai_key}'" >> /etc/open-webui.d/open-webui.env
 echo "OPENAI_BASE='-e OPENAI_API_BASE_URLS=${openai_base}'" >> /etc/open-webui.d/open-webui.env
+%{ endif }
 
 ## Create the systemd unit
 ## When starting systemd will load the environment file and pass the variables to the container
@@ -87,7 +84,7 @@ Restart=always
 EnvironmentFile=/etc/open-webui.d/open-webui.env
 ExecStartPre=-/usr/bin/docker stop %n
 ExecStartPre=-/usr/bin/docker rm %n
-ExecStart=/usr/bin/docker run -p 80:8080 $OPENAI_BASE $OPENAI_KEY -e RAG_EMBEDDING_MODEL_AUTO_UPDATE=true -v /etc/open-webui.d:/root/.open_web_ui -v /etc/open-webui.d:/app/backend/data --name %n ghcr.io/open-webui/open-webui:v0.9.5-ollama
+ExecStart=/usr/bin/docker run -p 80:8080 $OPENAI_BASE $OPENAI_KEY -e ENABLE_OPEN_API=false -e RAG_EMBEDDING_MODEL_AUTO_UPDATE=true -v /etc/open-webui.d:/root/.open_web_ui -v /etc/open-webui.d:/app/backend/data --name %n ghcr.io/open-webui/open-webui:v0.9.5-ollama
 
 [Install]
 WantedBy=multi-user.target
@@ -98,3 +95,6 @@ systemctl daemon-reload
 systemctl enable openwebui.service
 
 systemctl start openwebui.service
+
+until docker exec openwebui.service ollama list >/dev/null 2>&1; do sleep 5; done
+docker exec openwebui.service ollama pull ${ollama_model}

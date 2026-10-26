@@ -13,12 +13,12 @@ resource "aws_instance" "bastion" {
   }
 }
 
-# On-demand instance (where ollama will run)
 resource "aws_instance" "open_web_ui" {
   ami           = data.aws_ami.debian.id
   instance_type = "t3.medium"
 
   associate_public_ip_address = false
+  user_data_replace_on_change = true
   vpc_security_group_ids      = [aws_security_group.private_ssh.id, aws_security_group.private_http.id]
   key_name                    = aws_key_pair.open_web_ui.key_name
   subnet_id                   = aws_subnet.private.id
@@ -30,6 +30,7 @@ resource "aws_instance" "open_web_ui" {
       {
         open_webui_user   = var.open_webui_user,
         open_webui_passwd = random_password.password.result,
+        ollama_model      = var.ollama_model
         openai_base       = var.openai_base,
         openai_key        = var.openai_key
   }))
