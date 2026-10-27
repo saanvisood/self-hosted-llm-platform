@@ -4,7 +4,7 @@ data "aws_ami" "debian" {
 
   filter {
     name   = "name"
-    values = ["debian-11-amd64-*"]
+    values = ["debian-12-amd64-*"]
   }
 
   filter {
@@ -37,7 +37,7 @@ resource "random_password" "password" {
 resource "aws_secretsmanager_secret" "open_webui_secret" {
   name                    = "open-webui-admin-credentials"
   description             = "Open WebUI admin credentials"
-  recovery_window_in_days = 7
+  recovery_window_in_days = 0
 }
 
 # Storing credentials inside secret container

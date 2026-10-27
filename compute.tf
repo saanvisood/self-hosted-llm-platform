@@ -23,7 +23,11 @@ resource "aws_instance" "open_web_ui" {
   key_name                    = aws_key_pair.open_web_ui.key_name
   subnet_id                   = aws_subnet.private.id
 
-  depends_on = [aws_nat_gateway.main]
+  depends_on = [
+    aws_nat_gateway.main,
+    aws_route.private_nat,
+    aws_route_table_association.private,
+  ]
 
   user_data_base64 = base64encode(
     templatefile("${path.module}/scripts/provision_vars.sh",
